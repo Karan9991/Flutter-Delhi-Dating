@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "49793172042",
+    "project_id": "flutter-delhi-dating",
+    "storage_bucket": "flutter-delhi-dating.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:49793172042:android:bd8e9c6c85d47e47245cb3",
+        "android_client_info": {
+          "package_name": "com.example.dating_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "49793172042-ar9d5qna9smkma4rbvssa6rh8pr8lckb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.dating_app",
+            "certificate_hash": "bd357e5ac757e32f98ee73c57d509fae721bb36f"
+          }
+        },
+        {
+          "client_id": "49793172042-tl0gvpni6cssp1crdcmfi7407fodiuln.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCECYl9u6OHbVwaQy--Lxl1ydm6WugBMTs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "49793172042-tl0gvpni6cssp1crdcmfi7407fodiuln.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "49793172042-p6m44qgb7q44l6lcovv8s01n5chbru6c.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.datingApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

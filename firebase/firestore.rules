@@ -1,0 +1,40 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && request.auth.uid == userId;
+      allow delete: if signedIn() && request.auth.uid == userId;
+    }
+
+    match /swipes/{userId}/liked/{otherId} {
+      allow create, update, delete: if signedIn() && request.auth.uid == userId;
+      allow read: if signedIn() && request.auth.uid == otherId;
+    }
+
+    match /swipes/{userId}/passed/{otherId} {
+      allow create, update, delete: if signedIn() && request.auth.uid == userId;
+      allow read: if signedIn() && request.auth.uid == userId;
+    }
+
+    match /swipes/{userId}/likedBy/{likerId} {
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow create, update: if signedIn() && request.auth.uid == likerId;
+      allow delete: if signedIn() && (request.auth.uid == likerId || request.auth.uid == userId);
+    }
+
+    match /matches/{matchId} {
+      allow read, update, delete: if signedIn() && request.auth.uid in resource.data.userIds;
+      allow create: if signedIn() && request.auth.uid in request.resource.data.userIds;
+
+      match /messages/{messageId} {
+        allow read, create, delete: if signedIn() && request.auth.uid in get(/databases/$(database)/documents/matches/$(matchId)).data.userIds;
+      }
+    }
+  }
+}
