@@ -1,6 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../config/web_page_urls.dart';
 import '../../models/user_settings.dart';
 import '../../providers.dart';
 
@@ -200,12 +203,7 @@ class SettingsScreen extends ConsumerWidget {
             _InfoCard(
               title: 'Help & Support',
               description: 'Contact support or report a safety concern.',
-              onTap: () => _showInfoSheet(
-                context,
-                title: 'Help & Support',
-                body:
-                    'Need help? Email support@yourapp.com or add your help center URL before publishing.',
-              ),
+              onTap: () => _openSupportPage(context),
             ),
             const SizedBox(height: 20),
             FilledButton(
@@ -494,6 +492,97 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _openSupportPage(BuildContext context) async {
+    await _openExternalPage(context, Uri.parse(kSupportPageUrl));
+  }
+
+  Future<void> _openExternalPage(BuildContext context, Uri uri) async {
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (launched || !context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Unable to open the page right now.')),
+    );
+  }
+
+  Future<void> _deleteDocumentQuery(Query<Map<String, dynamic>> query) async {
+    const batchSize = 300;
+    while (true) {
+      final snapshot = await query.limit(batchSize).get();
+      if (snapshot.docs.isEmpty) break;
+
+      final batch = query.firestore.batch();
+      for (final doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+
+      if (snapshot.docs.length < batchSize) break;
+    }
+  }
+
+  Future<void> _deleteDocumentReferences(
+    FirebaseFirestore firestore,
+    List<DocumentReference<Map<String, dynamic>>> refs,
+  ) async {
+    const batchSize = 400;
+    for (var index = 0; index < refs.length; index += batchSize) {
+      final end = index + batchSize > refs.length
+          ? refs.length
+          : index + batchSize;
+      final batch = firestore.batch();
+      for (final ref in refs.sublist(index, end)) {
+        batch.delete(ref);
+      }
+      await batch.commit();
+    }
+  }
+
+  Future<void> _deleteUserAssociatedData({
+    required FirebaseFirestore firestore,
+    required String uid,
+  }) async {
+    final swipesRef = firestore.collection('swipes').doc(uid);
+    final likedSnapshot = await swipesRef.collection('liked').get();
+    final likedBySnapshot = await swipesRef.collection('likedBy').get();
+
+    final cleanupRefs = <DocumentReference<Map<String, dynamic>>>[];
+    for (final doc in likedSnapshot.docs) {
+      cleanupRefs.add(
+        firestore
+            .collection('swipes')
+            .doc(doc.id)
+            .collection('likedBy')
+            .doc(uid),
+      );
+    }
+    for (final doc in likedBySnapshot.docs) {
+      cleanupRefs.add(
+        firestore.collection('swipes').doc(doc.id).collection('liked').doc(uid),
+      );
+    }
+
+    await _deleteDocumentReferences(firestore, cleanupRefs);
+    await _deleteDocumentQuery(swipesRef.collection('liked'));
+    await _deleteDocumentQuery(swipesRef.collection('passed'));
+    await _deleteDocumentQuery(swipesRef.collection('likedBy'));
+    await swipesRef.delete();
+
+    final matchesSnapshot = await firestore
+        .collection('matches')
+        .where('userIds', arrayContains: uid)
+        .get();
+
+    for (final matchDoc in matchesSnapshot.docs) {
+      await _deleteDocumentQuery(matchDoc.reference.collection('messages'));
+    }
+    await _deleteDocumentReferences(
+      firestore,
+      matchesSnapshot.docs.map((doc) => doc.reference).toList(),
+    );
+
+    await firestore.collection('users').doc(uid).delete();
+  }
+
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -519,15 +608,46 @@ class SettingsScreen extends ConsumerWidget {
 
     final user = ref.read(firebaseAuthProvider).currentUser;
     if (user == null) return;
+    final firestore = ref.read(firestoreProvider);
+
+    final profileDoc = await firestore.collection('users').doc(user.uid).get();
+    final profileData = profileDoc.data() ?? const <String, dynamic>{};
+    final displayName = (profileData['displayName'] as String?)?.trim();
+    final deletedItems = [
+      'Authentication account',
+      'Profile details',
+      'Photos and bio',
+      'Settings and preferences',
+      'Matches and chat messages',
+      'Swipe activity (likes/passes)',
+      'Notification tokens',
+    ];
 
     try {
-      await ref
-          .read(firestoreProvider)
-          .collection('users')
-          .doc(user.uid)
-          .delete();
+      await _deleteUserAssociatedData(firestore: firestore, uid: user.uid);
       await user.delete();
+
+      final deletePage = Uri.parse(kDeleteAccountPageUrl).replace(
+        queryParameters: {
+          'uid': user.uid,
+          if (user.email != null && user.email!.isNotEmpty) 'email': user.email,
+          if (displayName != null && displayName.isNotEmpty)
+            'name': displayName,
+          'deleted': deletedItems.join('|'),
+          'time': DateTime.now().toUtc().toIso8601String(),
+        },
+      );
+      final opened = await launchUrl(
+        deletePage,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!opened && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to open the page right now.')),
+        );
+      }
     } catch (error) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please sign in again before deleting your account.'),

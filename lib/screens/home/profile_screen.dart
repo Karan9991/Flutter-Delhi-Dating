@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../models/user_profile.dart';
 import '../../providers.dart';
 import '../../widgets/empty_state.dart';
 
@@ -30,7 +31,7 @@ class ProfileScreen extends ConsumerWidget {
       ),
       body: profileState.when(
         data: (profile) {
-          if (profile == null) {
+          if (profile == null || !_hasCompletedProfile(profile)) {
             return const EmptyState(
               title: 'Build your profile',
               subtitle: 'Add your details to start matching.',
@@ -147,6 +148,13 @@ class ProfileScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
       ),
     );
+  }
+
+  bool _hasCompletedProfile(UserProfile profile) {
+    return profile.displayName.trim().isNotEmpty &&
+        profile.age >= 18 &&
+        profile.photoUrls.isNotEmpty &&
+        profile.bio.trim().isNotEmpty;
   }
 }
 

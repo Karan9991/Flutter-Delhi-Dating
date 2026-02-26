@@ -135,4 +135,5 @@ final userSettingsProvider = StreamProvider.autoDispose<UserSettings>((ref) {
   return ref.read(firestoreServiceProvider).settingsStream(auth.uid);
 });
 
+final onboardingSeenProvider = StateProvider<bool>((ref) => false);
 final delhiAccessGrantedProvider = StateProvider<bool>((ref) => false);

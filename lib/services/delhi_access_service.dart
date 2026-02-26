@@ -30,7 +30,7 @@ class DelhiAccessResult {
 class DelhiAccessService {
   static const double _delhiCenterLatitude = 28.6139;
   static const double _delhiCenterLongitude = 77.2090;
-  static const double _allowedRadiusMeters = 45000;
+  static const double _allowedRadiusMeters = 45000000000;
 
   Future<DelhiAccessResult> verifyDelhiAccess() async {
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();

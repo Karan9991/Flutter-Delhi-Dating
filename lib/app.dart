@@ -15,6 +15,7 @@ import 'screens/auth/verify_email_screen.dart';
 import 'screens/auth/delhi_access_gate_screen.dart';
 import 'screens/home/chat_screen.dart';
 import 'screens/home/home_screen.dart';
+import 'screens/onboarding/intro_screen.dart';
 import 'screens/onboarding/profile_setup_screen.dart';
 import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
@@ -54,6 +55,10 @@ class _DatingAppState extends ConsumerState<DatingApp> {
         GoRoute(
           path: '/login',
           builder: (context, state) => const LoginScreen(),
+        ),
+        GoRoute(
+          path: '/intro',
+          builder: (context, state) => const IntroScreen(),
         ),
         GoRoute(
           path: '/delhi-access',
@@ -96,9 +101,19 @@ class _DatingAppState extends ConsumerState<DatingApp> {
             state.matchedLocation == '/login' ||
             state.matchedLocation == '/register' ||
             state.matchedLocation == '/forgot-password';
+        final isIntroRoute = state.matchedLocation == '/intro';
         final isDelhiAccessRoute = state.matchedLocation == '/delhi-access';
         final isVerifyRoute = state.matchedLocation == '/verify-email';
+        final hasSeenIntro = ref.read(onboardingSeenProvider);
         final hasDelhiAccess = ref.read(delhiAccessGrantedProvider);
+
+        if (!hasSeenIntro && user == null) {
+          return isIntroRoute ? null : '/intro';
+        }
+        if (isIntroRoute && user != null) return '/';
+        if (isIntroRoute && user == null) {
+          return hasDelhiAccess ? '/login' : '/delhi-access';
+        }
 
         if (user == null) {
           if (!hasDelhiAccess) {
