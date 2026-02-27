@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../config/web_page_urls.dart';
 import '../../providers.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -105,6 +107,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       }
     }
     return 'Could not create account right now.';
+  }
+
+  Future<void> _openExternalPage(String url) async {
+    final opened = await launchUrl(
+      Uri.parse(url),
+      mode: LaunchMode.externalApplication,
+    );
+    if (opened || !mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Unable to open the page right now.')),
+    );
   }
 
   @override
@@ -349,6 +362,92 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                         ),
                                   label: const Text('Continue with Google'),
                                 ),
+                              ),
+                              const SizedBox(height: 10),
+                              Wrap(
+                                alignment: WrapAlignment.center,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                spacing: 4,
+                                runSpacing: 2,
+                                children: [
+                                  Text(
+                                    'With sign up, you agree to our',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(alpha: 0.72),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: _loading
+                                        ? null
+                                        : () => _openExternalPage(
+                                            kTermsConditionsUrl,
+                                          ),
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      minimumSize: Size.zero,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                      foregroundColor:
+                                          theme.colorScheme.primary,
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                    child: Text(
+                                      'Terms & Conditions',
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                            decoration:
+                                                TextDecoration.underline,
+                                          ),
+                                    ),
+                                  ),
+                                  Text(
+                                    'and',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(alpha: 0.72),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: _loading
+                                        ? null
+                                        : () => _openExternalPage(
+                                            kPrivacyPolicyUrl,
+                                          ),
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      minimumSize: Size.zero,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                      foregroundColor:
+                                          theme.colorScheme.primary,
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                    child: Text(
+                                      'Privacy Policy',
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                            decoration:
+                                                TextDecoration.underline,
+                                          ),
+                                    ),
+                                  ),
+                                  Text(
+                                    '.',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(alpha: 0.72),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
