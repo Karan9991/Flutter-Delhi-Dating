@@ -53,7 +53,7 @@ final storageServiceProvider = Provider<StorageService>(
   (ref) => StorageService(ref.read(storageProvider)),
 );
 final delhiAccessServiceProvider = Provider<DelhiAccessService>(
-  (ref) => DelhiAccessService(),
+  (ref) => DelhiAccessService(ref.read(firestoreProvider)),
 );
 final matchingServiceProvider = Provider<MatchingService>(
   (ref) => MatchingService(

@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:49793172042:android:bd8e9c6c85d47e47245cb3",
         "android_client_info": {
-          "package_name": "com.example.dating_app"
+          "package_name": "com.delhi.dating"
         }
       },
       "oauth_client": [
@@ -17,7 +17,7 @@
           "client_id": "49793172042-ar9d5qna9smkma4rbvssa6rh8pr8lckb.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.dating_app",
+            "package_name": "com.delhi.dating",
             "certificate_hash": "bd357e5ac757e32f98ee73c57d509fae721bb36f"
           }
         },

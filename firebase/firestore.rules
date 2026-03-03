@@ -6,6 +6,11 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    match /app_config/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     match /users/{userId} {
       allow read: if signedIn();
       allow create, update: if signedIn() && request.auth.uid == userId;

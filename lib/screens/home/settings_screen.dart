@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../config/web_page_urls.dart';
 import '../../models/user_settings.dart';
 import '../../providers.dart';
+import '../../services/storage_service.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -624,8 +625,11 @@ class SettingsScreen extends ConsumerWidget {
 
   Future<void> _deleteUserAssociatedData({
     required FirebaseFirestore firestore,
+    required StorageService storageService,
     required String uid,
   }) async {
+    await storageService.deleteUserProfileImages(uid);
+
     final swipesRef = firestore.collection('swipes').doc(uid);
     final likedSnapshot = await swipesRef.collection('liked').get();
     final likedBySnapshot = await swipesRef.collection('likedBy').get();
@@ -694,6 +698,7 @@ class SettingsScreen extends ConsumerWidget {
     final user = ref.read(firebaseAuthProvider).currentUser;
     if (user == null) return;
     final firestore = ref.read(firestoreProvider);
+    final storageService = ref.read(storageServiceProvider);
 
     final profileDoc = await firestore.collection('users').doc(user.uid).get();
     final profileData = profileDoc.data() ?? const <String, dynamic>{};
@@ -709,7 +714,11 @@ class SettingsScreen extends ConsumerWidget {
     ];
 
     try {
-      await _deleteUserAssociatedData(firestore: firestore, uid: user.uid);
+      await _deleteUserAssociatedData(
+        firestore: firestore,
+        storageService: storageService,
+        uid: user.uid,
+      );
       await user.delete();
 
       final deletePage = Uri.parse(kDeleteAccountPageUrl).replace(

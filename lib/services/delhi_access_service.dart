@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 
 enum DelhiAccessStatus {
@@ -28,11 +29,27 @@ class DelhiAccessResult {
 }
 
 class DelhiAccessService {
+  DelhiAccessService(this._db);
+
+  final FirebaseFirestore _db;
+
   static const double _delhiCenterLatitude = 28.6139;
   static const double _delhiCenterLongitude = 77.2090;
-  static const double _allowedRadiusMeters = 45000000000;
+  static const double _allowedRadiusMeters = 60000;
+  static const String _configCollection = 'app_config';
+  static const String _configDoc = 'access';
+  static const String _locationCheckField = 'location';
 
   Future<DelhiAccessResult> verifyDelhiAccess() async {
+    final enforceLocationCheck = await _shouldEnforceLocationCheck();
+    if (!enforceLocationCheck) {
+      return const DelhiAccessResult(
+        status: DelhiAccessStatus.allowed,
+        message:
+            'Location check is temporarily disabled. You can continue to sign in.',
+      );
+    }
+
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       return const DelhiAccessResult(
@@ -101,6 +118,23 @@ class DelhiAccessService {
         status: DelhiAccessStatus.error,
         message: 'Unable to verify location right now. Please try again.',
       );
+    }
+  }
+
+  Future<bool> _shouldEnforceLocationCheck() async {
+    try {
+      final doc = await _db.collection(_configCollection).doc(_configDoc).get();
+      final value = doc.data()?[_locationCheckField];
+
+      if (value is num) {
+        return value.toInt() != 0;
+      }
+      if (value is bool) {
+        return value;
+      }
+      return true;
+    } catch (_) {
+      return true;
     }
   }
 
