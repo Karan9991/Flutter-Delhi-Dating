@@ -1,7 +1,7 @@
 const String kSupportPageUrl =
-    'https://karan9991.github.io/Flutter-Delhi-Dating/support.html';
+    'https://karan9991.github.io/Flutter_delhi_dating_support';
 const String kDeleteAccountPageUrl =
-    'https://karan9991.github.io/Flutter-Delhi-Dating/delete-account.html';
+    'https://karan9991.github.io/Flutter_delhi_dating_delete_account';
 const String kPrivacyPolicyUrl =
     'https://doc-hosting.flycricket.io/delhi-dating-privacy-policy/aec4e56c-963a-4e6b-9ef1-6c05501335a4/privacy';
 const String kTermsConditionsUrl =

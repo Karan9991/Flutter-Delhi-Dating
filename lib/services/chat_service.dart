@@ -14,6 +14,17 @@ class ChatService {
     return ordered.join('_');
   }
 
+  Future<String?> resolveOtherUserId({
+    required String matchId,
+    required String currentUid,
+  }) async {
+    final matchDoc = await _db.collection('matches').doc(matchId).get();
+    if (!matchDoc.exists) return null;
+    final userIds = List<String>.from(matchDoc.data()?['userIds'] ?? const []);
+    if (!userIds.contains(currentUid)) return null;
+    return userIds.firstWhere((uid) => uid != currentUid, orElse: () => '');
+  }
+
   Stream<List<ChatMessage>> messagesStream(String matchId) {
     return _db
         .collection('matches')
@@ -34,6 +45,33 @@ class ChatService {
   }) async {
     final normalized = text.trim();
     if (normalized.isEmpty) return;
+    final matchDoc = await _db.collection('matches').doc(matchId).get();
+    if (!matchDoc.exists) {
+      throw StateError('Conversation is no longer available.');
+    }
+    final userIds = List<String>.from(matchDoc.data()?['userIds'] ?? const []);
+    if (!userIds.contains(senderId)) {
+      throw StateError('You are not a participant in this conversation.');
+    }
+    final recipientUid = userIds.firstWhere(
+      (uid) => uid != senderId,
+      orElse: () => '',
+    );
+    if (recipientUid.isEmpty) {
+      throw StateError('Could not find the other participant.');
+    }
+    final blocked = await _isBlockedBetween(
+      blockerUid: senderId,
+      blockedUid: recipientUid,
+    );
+    final blockedByOther = await _isBlockedBetween(
+      blockerUid: recipientUid,
+      blockedUid: senderId,
+    );
+    if (blocked || blockedByOther) {
+      throw StateError('Messaging is unavailable for this chat.');
+    }
+
     final messageRef = _db
         .collection('matches')
         .doc(matchId)
@@ -51,14 +89,6 @@ class ChatService {
       'lastMessageAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
-    final matchDoc = await _db.collection('matches').doc(matchId).get();
-    final userIds = List<String>.from(matchDoc.data()?['userIds'] ?? const []);
-    final recipientUid = userIds.firstWhere(
-      (uid) => uid != senderId,
-      orElse: () => '',
-    );
-    if (recipientUid.isEmpty) return;
-
     await _fcmService.sendChatNotification(
       senderUid: senderId,
       recipientUid: recipientUid,
@@ -71,6 +101,21 @@ class ChatService {
     required String currentUid,
     required String otherUid,
   }) async {
+    if (currentUid == otherUid) {
+      throw StateError('Invalid conversation participants.');
+    }
+    final blocked = await _isBlockedBetween(
+      blockerUid: currentUid,
+      blockedUid: otherUid,
+    );
+    final blockedByOther = await _isBlockedBetween(
+      blockerUid: otherUid,
+      blockedUid: currentUid,
+    );
+    if (blocked || blockedByOther) {
+      throw StateError('This user is unavailable for chat.');
+    }
+
     final conversationId = conversationIdForUsers(currentUid, otherUid);
     final ref = _db.collection('matches').doc(conversationId);
     final snapshot = await ref.get();
@@ -86,6 +131,81 @@ class ChatService {
     }
 
     return conversationId;
+  }
+
+  Future<void> reportUser({
+    required String reporterUid,
+    required String reportedUid,
+    required String matchId,
+    required String reason,
+    String? details,
+  }) async {
+    final normalizedReason = reason.trim();
+    final normalizedDetails = details?.trim() ?? '';
+    await _db.collection('reports').add({
+      'source': 'chat',
+      'matchId': matchId,
+      'reporterUid': reporterUid,
+      'reportedUid': reportedUid,
+      'reason': normalizedReason.isEmpty ? 'Other' : normalizedReason,
+      if (normalizedDetails.isNotEmpty) 'details': normalizedDetails,
+      'status': 'open',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> blockUser({
+    required String blockerUid,
+    required String blockedUid,
+    required String matchId,
+    String reason = 'User blocked from chat',
+  }) async {
+    final batch = _db.batch();
+    final blockedAt = FieldValue.serverTimestamp();
+
+    batch.set(
+      _db
+          .collection('users')
+          .doc(blockerUid)
+          .collection('blocks')
+          .doc(blockedUid),
+      {
+        'blockerUid': blockerUid,
+        'blockedUid': blockedUid,
+        'matchId': matchId,
+        'reason': reason,
+        'source': 'chat',
+        'blockedAt': blockedAt,
+      },
+      SetOptions(merge: true),
+    );
+
+    batch.set(
+      _db
+          .collection('swipes')
+          .doc(blockerUid)
+          .collection('passed')
+          .doc(blockedUid),
+      {'createdAt': blockedAt, 'blocked': true},
+      SetOptions(merge: true),
+    );
+    batch.delete(
+      _db
+          .collection('swipes')
+          .doc(blockerUid)
+          .collection('liked')
+          .doc(blockedUid),
+    );
+    batch.delete(
+      _db
+          .collection('swipes')
+          .doc(blockerUid)
+          .collection('likedBy')
+          .doc(blockedUid),
+    );
+
+    await batch.commit();
+    await unmatch(matchId);
   }
 
   Future<void> deleteChat(String matchId) async {
@@ -147,5 +267,18 @@ class ChatService {
     if (updated) {
       await batch.commit();
     }
+  }
+
+  Future<bool> _isBlockedBetween({
+    required String blockerUid,
+    required String blockedUid,
+  }) async {
+    final doc = await _db
+        .collection('users')
+        .doc(blockerUid)
+        .collection('blocks')
+        .doc(blockedUid)
+        .get();
+    return doc.exists;
   }
 }

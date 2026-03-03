@@ -70,10 +70,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final auth = ref.read(authStateProvider).value;
     if (auth == null) return;
     final text = _controller.text;
+    if (text.trim().isEmpty) return;
     _controller.clear();
-    await ref
-        .read(chatServiceProvider)
-        .sendMessage(matchId: widget.matchId, senderId: auth.uid, text: text);
+    try {
+      await ref
+          .read(chatServiceProvider)
+          .sendMessage(matchId: widget.matchId, senderId: auth.uid, text: text);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_friendlyChatError(error))));
+    }
   }
 
   Future<void> _openProfile() async {
@@ -141,6 +149,184 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     ).showSnackBar(const SnackBar(content: Text('Chat deleted')));
   }
 
+  Future<String?> _resolveOtherUid(String currentUid) async {
+    if (widget.otherUserId.isNotEmpty && widget.otherUserId != currentUid) {
+      return widget.otherUserId;
+    }
+    final resolved = await ref
+        .read(chatServiceProvider)
+        .resolveOtherUserId(matchId: widget.matchId, currentUid: currentUid);
+    if (resolved == null || resolved.isEmpty) return null;
+    return resolved;
+  }
+
+  Future<void> _reportUser() async {
+    final auth = ref.read(authStateProvider).value;
+    if (auth == null) return;
+    final otherUid = await _resolveOtherUid(auth.uid);
+    if (!mounted) return;
+    if (otherUid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not identify this user.')),
+      );
+      return;
+    }
+
+    const reasons = [
+      'Spam',
+      'Harassment',
+      'Inappropriate content',
+      'Fake profile',
+      'Scam / Fraud',
+      'Other',
+    ];
+    var selectedReason = reasons.first;
+    final detailsController = TextEditingController();
+    final submit = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Report user'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  initialValue: selectedReason,
+                  decoration: const InputDecoration(labelText: 'Reason'),
+                  items: reasons
+                      .map(
+                        (reason) => DropdownMenuItem<String>(
+                          value: reason,
+                          child: Text(reason),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setDialogState(() => selectedReason = value);
+                  },
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: detailsController,
+                  minLines: 2,
+                  maxLines: 4,
+                  decoration: const InputDecoration(
+                    labelText: 'Additional details (optional)',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Submit report'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (submit != true) {
+      detailsController.dispose();
+      return;
+    }
+
+    try {
+      await ref
+          .read(chatServiceProvider)
+          .reportUser(
+            reporterUid: auth.uid,
+            reportedUid: otherUid,
+            matchId: widget.matchId,
+            reason: selectedReason,
+            details: detailsController.text,
+          );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Report submitted. Thank you.')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not submit report right now.')),
+      );
+    } finally {
+      detailsController.dispose();
+    }
+  }
+
+  Future<void> _confirmBlockUser() async {
+    final auth = ref.read(authStateProvider).value;
+    if (auth == null) return;
+    final otherUid = await _resolveOtherUid(auth.uid);
+    if (!mounted) return;
+    if (otherUid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not identify this user.')),
+      );
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Block user?'),
+        content: const Text(
+          'This user will be blocked and this chat will be removed.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Block'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    try {
+      await ref
+          .read(chatServiceProvider)
+          .blockUser(
+            blockerUid: auth.uid,
+            blockedUid: otherUid,
+            matchId: widget.matchId,
+          );
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('User blocked.')));
+      Navigator.pop(context);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not block this user right now.')),
+      );
+    }
+  }
+
+  String _friendlyChatError(Object error) {
+    final raw = error.toString().toLowerCase();
+    if (raw.contains('blocked') || raw.contains('unavailable')) {
+      return 'You can no longer message this user.';
+    }
+    if (raw.contains('no longer available')) {
+      return 'This conversation is no longer available.';
+    }
+    return 'Unable to send message right now.';
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authStateProvider).value;
@@ -179,17 +365,31 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               if (value == 'unmatch') {
                 _confirmUnmatch();
               }
+              if (value == 'report') {
+                _reportUser();
+              }
+              if (value == 'block') {
+                _confirmBlockUser();
+              }
             },
             itemBuilder: (context) => [
               const PopupMenuItem(
                 value: 'profile',
                 child: Text('View profile'),
               ),
+              const PopupMenuItem(value: 'report', child: Text('Report user')),
               const PopupMenuItem(
                 value: 'delete_chat',
                 child: Text('Delete chat'),
               ),
               const PopupMenuItem(value: 'unmatch', child: Text('Unmatch')),
+              PopupMenuItem(
+                value: 'block',
+                child: Text(
+                  'Block user',
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
             ],
           ),
         ],

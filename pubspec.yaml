@@ -77,6 +77,9 @@ flutter:
 
   assets:
     - lib/config/flutter-delhi-dating-1b59ff5d7c37.json
+    - assets/dd1.jpeg
+    - assets/dd2.jpeg
+    - assets/dd3.jpg
 
   # To add assets to your application, add an assets section, like this:
   # assets:

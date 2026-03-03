@@ -1,6 +1,5 @@
 import 'dart:ui' as ui;
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,8 +25,7 @@ class _IntroScreenState extends ConsumerState<IntroScreen> {
       title: 'Welcome to Delhi Dating',
       subtitle: 'Date in your local Delhi area around you',
       highlight: 'Find real people nearby with a cleaner, safer vibe.',
-      image:
-          'https://images.unsplash.com/photo-1470093851219-69951fcbb533?w=1200&auto=format&fit=crop',
+      image: 'assets/dd3.jpg',
       tags: ['Delhi Only', 'Verified Profiles', 'Nearby Matches'],
       start: Color(0xFFFFF4FD),
       end: Color(0xFFFFCFF4),
@@ -36,8 +34,7 @@ class _IntroScreenState extends ConsumerState<IntroScreen> {
       title: 'Discover Better Matches',
       subtitle: 'Swipe less. Connect smarter.',
       highlight: 'Quality profiles and meaningful suggestions every day.',
-      image:
-          'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=1200&auto=format&fit=crop',
+      image: 'assets/dd2.jpeg',
       tags: ['Smart Picks', 'Instant Chat', 'No Subscriptions'],
       start: Color(0xFFFFF5FE),
       end: Color(0xFFFFD9F7),
@@ -46,8 +43,7 @@ class _IntroScreenState extends ConsumerState<IntroScreen> {
       title: 'Build Real Connections',
       subtitle: 'Conversations that actually go somewhere',
       highlight: 'Start talking instantly and make your first date easier.',
-      image:
-          'https://images.unsplash.com/photo-1516589091380-5d8e87df6999?w=1200&auto=format&fit=crop',
+      image: 'assets/dd1.jpeg',
       tags: ['Free Forever', 'Chat + Match', 'Designed for Delhi'],
       start: Color(0xFFFFF7FF),
       end: Color(0xFFFFD3F3),
@@ -216,7 +212,9 @@ class _IntroPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(32),
                     child: Stack(
                       children: [
-                        Positioned.fill(child: _NetworkPhoto(url: slide.image)),
+                        Positioned.fill(
+                          child: _AssetPhoto(assetPath: slide.image),
+                        ),
                         Positioned.fill(
                           child: DecoratedBox(
                             decoration: BoxDecoration(
@@ -588,22 +586,17 @@ class _ProgressPanel extends StatelessWidget {
   }
 }
 
-class _NetworkPhoto extends StatelessWidget {
-  const _NetworkPhoto({required this.url});
+class _AssetPhoto extends StatelessWidget {
+  const _AssetPhoto({required this.assetPath});
 
-  final String url;
+  final String assetPath;
 
   @override
   Widget build(BuildContext context) {
-    return CachedNetworkImage(
-      imageUrl: url,
+    return Image.asset(
+      assetPath,
       fit: BoxFit.cover,
-      placeholder: (context, imageUrl) => Container(
-        color: const Color(0xFFF4D7EE),
-        alignment: Alignment.center,
-        child: const Icon(Icons.favorite_outline_rounded),
-      ),
-      errorWidget: (context, imageUrl, error) => Container(
+      errorBuilder: (context, error, stackTrace) => Container(
         color: const Color(0xFFF4D7EE),
         alignment: Alignment.center,
         child: const Icon(Icons.broken_image_outlined),

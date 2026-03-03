@@ -182,13 +182,8 @@ class SettingsScreen extends ConsumerWidget {
             _InfoCard(
               title: 'Safety Center',
               description:
-                  'Keep conversations respectful and meet in public places for first dates.',
-              onTap: () => _showInfoSheet(
-                context,
-                title: 'Safety Center',
-                body:
-                    'Delhi Dating encourages respectful connections. Share your plans with friends, meet in public, and trust your instincts.',
-              ),
+                  'Safety tips, reporting guidance, and emergency contacts.',
+              onTap: () => _showSafetyCenterSheet(context),
             ),
             _InfoCard(
               title: 'Privacy & Terms',
@@ -492,6 +487,96 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
+  void _showSafetyCenterSheet(BuildContext context) {
+    final theme = Theme.of(context);
+    final rootContext = context;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Safety Center',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Stay safe while meeting new people. If anything feels wrong, trust your instincts and leave immediately.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.78),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const _SafetyBullet(
+                  icon: Icons.public_rounded,
+                  title: 'Meet in public',
+                  description:
+                      'Choose cafes, malls, or other busy places for first meetups. Avoid private locations.',
+                ),
+                const SizedBox(height: 10),
+                const _SafetyBullet(
+                  icon: Icons.share_location_rounded,
+                  title: 'Share your plan',
+                  description:
+                      'Tell a trusted friend where you are going and when you expect to be back.',
+                ),
+                const SizedBox(height: 10),
+                const _SafetyBullet(
+                  icon: Icons.no_drinks_rounded,
+                  title: 'Control your ride and belongings',
+                  description:
+                      'Use your own transport when possible and keep your phone, wallet, and drink in sight.',
+                ),
+                const SizedBox(height: 10),
+                const _SafetyBullet(
+                  icon: Icons.block_rounded,
+                  title: 'Report or block quickly',
+                  description:
+                      'Use block/report in chat for abuse, spam, harassment, or suspicious behavior.',
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: () async {
+                        Navigator.of(sheetContext).pop();
+                        await _openExternalPage(
+                          rootContext,
+                          Uri.parse('tel:112'),
+                        );
+                      },
+                      icon: const Icon(Icons.call_rounded),
+                      label: const Text('Emergency 112'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        Navigator.of(sheetContext).pop();
+                        await _openSupportPage(rootContext);
+                      },
+                      icon: const Icon(Icons.support_agent_rounded),
+                      label: const Text('Help & Support'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _openSupportPage(BuildContext context) async {
     await _openExternalPage(context, Uri.parse(kSupportPageUrl));
   }
@@ -744,6 +829,69 @@ class _InfoCard extends StatelessWidget {
         subtitle: Text(description),
         trailing: const Icon(Icons.chevron_right),
         onTap: onTap,
+      ),
+    );
+  }
+}
+
+class _SafetyBullet extends StatelessWidget {
+  const _SafetyBullet({
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.22),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 18, color: theme.colorScheme.primary),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  description,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.78),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -665,12 +665,20 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
     final auth = ref.read(authStateProvider).value;
     if (auth == null) return;
 
-    final conversationId = await ref
-        .read(chatServiceProvider)
-        .createOrGetConversation(currentUid: auth.uid, otherUid: profile.id);
+    try {
+      final conversationId = await ref
+          .read(chatServiceProvider)
+          .createOrGetConversation(currentUid: auth.uid, otherUid: profile.id);
 
-    if (!mounted) return;
-    context.push('/chat/$conversationId', extra: profile.id);
+      if (!mounted) return;
+      context.push('/chat/$conversationId', extra: profile.id);
+    } catch (error) {
+      if (!mounted) return;
+      final text = error.toString().toLowerCase().contains('unavailable')
+          ? 'This user is unavailable for chat.'
+          : 'Unable to open chat right now.';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+    }
   }
 
   void _openFilters() {
