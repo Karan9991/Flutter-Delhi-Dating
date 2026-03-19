@@ -4,6 +4,8 @@ import 'discover_screen.dart';
 import 'matches_screen.dart';
 import 'profile_screen.dart';
 import 'settings_screen.dart';
+import '../../config/admob_ids.dart';
+import '../../widgets/ad_banner.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, this.initialIndex = 0});
@@ -35,13 +37,23 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _index,
-        children: const [
-          DiscoverScreen(),
-          MatchesScreen(),
-          ProfileScreen(),
-          SettingsScreen(),
+      body: Column(
+        children: [
+          Expanded(
+            child: IndexedStack(
+              index: _index,
+              children: const [
+                DiscoverScreen(),
+                MatchesScreen(),
+                ProfileScreen(),
+                SettingsScreen(),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: AdBanner(adUnitId: AdMobIds.bannerAdUnitId()),
+          ),
         ],
       ),
       bottomNavigationBar: NavigationBar(

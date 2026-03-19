@@ -7,14 +7,14 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:49793172042:android:bd8e9c6c85d47e47245cb3",
+        "mobilesdk_app_id": "1:49793172042:android:f977641f536a4e11245cb3",
         "android_client_info": {
           "package_name": "com.delhi.dating"
         }
       },
       "oauth_client": [
         {
-          "client_id": "49793172042-ar9d5qna9smkma4rbvssa6rh8pr8lckb.apps.googleusercontent.com",
+          "client_id": "49793172042-8jg9n3t1ifvcl08jjb6jh55ufpjol020.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.delhi.dating",

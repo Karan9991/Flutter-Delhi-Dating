@@ -187,6 +187,12 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () => _showSafetyCenterSheet(context),
             ),
             _InfoCard(
+              title: 'Child Safety',
+              description:
+                  'View CSAE standards and report child safety concerns.',
+              onTap: () => _showChildSafetySheet(context),
+            ),
+            _InfoCard(
               title: 'Privacy & Terms',
               description: 'Review how your data is stored and used.',
               onTap: () => _showInfoSheet(
@@ -580,6 +586,74 @@ class SettingsScreen extends ConsumerWidget {
 
   Future<void> _openSupportPage(BuildContext context) async {
     await _openExternalPage(context, Uri.parse(kSupportPageUrl));
+  }
+
+  Future<void> _openChildSafetyStandardsPage(BuildContext context) async {
+    await _openExternalPage(context, Uri.parse(kChildSafetyStandardsUrl));
+  }
+
+  Future<void> _contactChildSafety(BuildContext context) async {
+    final uri = Uri(
+      scheme: 'mailto',
+      path: '000111karan@gmail.com',
+      queryParameters: {
+        'subject': 'Child safety concern (Delhi Dating)',
+        'body':
+            'Please include relevant profile or chat details, screenshots, and timestamps.',
+      },
+    );
+    await _openExternalPage(context, uri);
+  }
+
+  void _showChildSafetySheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Child Safety',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Delhi Dating is for adults (18+) only. We prohibit CSAE content and behavior.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Use in-app Report/Block in chat for urgent concerns, and contact us directly for child safety issues.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () => _openChildSafetyStandardsPage(context),
+                icon: const Icon(Icons.verified_user_outlined),
+                label: const Text('View Safety Standards'),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _contactChildSafety(context),
+                icon: const Icon(Icons.report_gmailerrorred_rounded),
+                label: const Text('Report Child Safety Concern'),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _openExternalPage(BuildContext context, Uri uri) async {

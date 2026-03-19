@@ -173,6 +173,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
 
     const reasons = [
+      'Minor / child safety concern',
       'Spam',
       'Harassment',
       'Inappropriate content',

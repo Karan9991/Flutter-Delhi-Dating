@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyCECYl9u6OHbVwaQy--Lxl1ydm6WugBMTs',
-    appId: '1:49793172042:android:bd8e9c6c85d47e47245cb3',
+    appId: '1:49793172042:android:f977641f536a4e11245cb3',
     messagingSenderId: '49793172042',
     projectId: 'flutter-delhi-dating',
     storageBucket: 'flutter-delhi-dating.firebasestorage.app',
@@ -63,6 +63,9 @@ class DefaultFirebaseOptions {
     messagingSenderId: '49793172042',
     projectId: 'flutter-delhi-dating',
     storageBucket: 'flutter-delhi-dating.firebasestorage.app',
+    androidClientId: '49793172042-ar9d5qna9smkma4rbvssa6rh8pr8lckb.apps.googleusercontent.com',
+    iosClientId: '49793172042-p6m44qgb7q44l6lcovv8s01n5chbru6c.apps.googleusercontent.com',
     iosBundleId: 'com.example.datingApp',
   );
+
 }

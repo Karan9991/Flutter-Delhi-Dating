@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Delhi Dating — Child Safety Standards</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#FFB6F2">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg1: #fff7fd;
+      --bg2: #ffe3f8;
+      --card: rgba(255, 255, 255, 0.9);
+      --text: #c200c2;
+      --muted: rgba(156, 0, 156, 0.8);
+      --accent: #ff00ff;
+      --accent2: #ff72f6;
+      --border: rgba(255, 0, 255, 0.22);
+      --shadow: 0 10px 30px rgba(255, 80, 229, 0.2);
+      --radius: 18px;
+      --maxw: 980px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background: linear-gradient(135deg, var(--bg1), var(--bg2));
+      font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .wrap { max-width: var(--maxw); margin: 0 auto; padding: 28px 16px 64px; }
+
+    .hero {
+      display: grid;
+      gap: 12px;
+      padding: 24px;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, rgba(255, 0, 255, 0.12), rgba(255, 114, 246, 0.24));
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+
+    .hero h1 { margin: 0; font-size: 30px; font-weight: 700; }
+    .hero p { margin: 0; color: var(--muted); }
+
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 12px;
+      width: fit-content;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    @media (min-width: 860px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+
+    .card h2 { margin: 0 0 10px; font-size: 18px; }
+    .card p { margin: 6px 0; color: var(--muted); }
+
+    .list { padding-left: 18px; color: var(--muted); }
+    .list li { margin: 6px 0; }
+
+    .btns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 12px;
+      font-weight: 600;
+      letter-spacing: .2px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: var(--shadow);
+    }
+
+    .btn.secondary {
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    footer {
+      margin-top: 26px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    a { color: #d400d4; }
+    .k { color: #bf00bf; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Delhi Dating — Child Safety Standards</h1>
+      <p>Delhi Dating is an adults-only platform (18+) and maintains zero tolerance for child sexual abuse and exploitation (CSAE).</p>
+      <span class="pill">Last updated: March 4, 2026</span>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h2>Our standards</h2>
+        <ul class="list">
+          <li>Users must be at least 18 years old.</li>
+          <li>Any CSAE/CSAM content or behavior is strictly prohibited.</li>
+          <li>Attempts to groom minors or request sexual content are prohibited.</li>
+          <li>Impersonation, coercion, trafficking, and exploitation are prohibited.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>In-app reporting and enforcement</h2>
+        <ul class="list">
+          <li>Users can report profiles and chats in-app.</li>
+          <li>Users can immediately block abusive or suspicious accounts.</li>
+          <li>Reported accounts may be restricted, suspended, or permanently removed.</li>
+          <li>We preserve relevant evidence according to legal and platform requirements.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Law enforcement compliance</h2>
+        <p>Delhi Dating complies with applicable child safety laws and reports relevant CSAE/CSAM matters to appropriate regional or national authorities where required.</p>
+      </div>
+
+      <div class="card">
+        <h2>Contact for child safety</h2>
+        <p>Designated contact for child safety and CSAM prevention practices:</p>
+        <p><strong>Email:</strong> <a href="mailto:000111karan@gmail.com">000111Karan@gmail.com</a></p>
+        <div class="btns">
+          <a class="btn" href="mailto:00111karan@gmail.com?subject=Child%20Safety%20Concern%20(Delhi%20Dating)">Report Child Safety Concern</a>
+          <a class="btn secondary" href="https://karan9991.github.io/Flutter_delhi_dating_support" target="_blank" rel="noopener">Open Support Page</a>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p>© <span class="k">Delhi Dating</span> — Child safety is a core platform requirement.</p>
+    </footer>
+  </div>
+</body>
+</html>
