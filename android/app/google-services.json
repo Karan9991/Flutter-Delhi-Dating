@@ -14,11 +14,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "49793172042-8jg9n3t1ifvcl08jjb6jh55ufpjol020.apps.googleusercontent.com",
+          "client_id": "49793172042-90qc5gaovnpa7dboh9lqoanibn2v0964.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.delhi.dating",
-            "certificate_hash": "bd357e5ac757e32f98ee73c57d509fae721bb36f"
+            "certificate_hash": "4737899903ed228ae478ca9725656972a7e6125b"
           }
         },
         {

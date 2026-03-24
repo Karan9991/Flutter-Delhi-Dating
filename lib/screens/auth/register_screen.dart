@@ -48,14 +48,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             password: _passwordController.text.trim(),
           );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Account created. Please verify your email before signing in.',
-          ),
-        ),
-      );
-      context.go('/login');
+      context.go('/verify-email');
     } catch (error) {
       setState(() {
         _error = _mapError(error);

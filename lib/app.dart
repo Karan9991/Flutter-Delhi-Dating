@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 import 'models/user_settings.dart';
 import 'providers.dart';
 import 'router_refresh.dart';
@@ -17,6 +16,8 @@ import 'screens/home/chat_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/onboarding/intro_screen.dart';
 import 'screens/onboarding/profile_setup_screen.dart';
+import 'screens/system/banned_screen.dart';
+import 'screens/system/maintenance_screen.dart';
 import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
 
@@ -139,6 +140,8 @@ class _DatingAppState extends ConsumerState<DatingApp> {
     } catch (_) {
       // Allows widget tests that do not bootstrap Firebase.
     }
+
+    ref.read(adServiceProvider).start();
   }
 
   @override
@@ -149,6 +152,12 @@ class _DatingAppState extends ConsumerState<DatingApp> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(featureFlagsProvider, (previous, next) {
+      final flags = next.asData?.value;
+      if (flags == null) return;
+      ref.read(adServiceProvider).setAdsEnabled(flags.adsEnabled);
+    });
+
     final settings = ref
         .watch(userSettingsProvider)
         .maybeWhen(
@@ -170,6 +179,34 @@ class _DatingAppState extends ConsumerState<DatingApp> {
         ? ThemeMode.dark
         : ThemeMode.light;
     final accentColor = Color(settings.accentColorValue);
+    final featureFlags = ref
+        .watch(featureFlagsProvider)
+        .maybeWhen(data: (value) => value, orElse: () => null);
+    final profile = ref
+        .watch(userProfileProvider)
+        .maybeWhen(data: (value) => value, orElse: () => null);
+
+    if (featureFlags?.maintenanceEnabled == true) {
+      return MaterialApp(
+        title: 'Delhi Dating',
+        theme: AppTheme.lightTheme(accent: accentColor),
+        darkTheme: AppTheme.darkTheme(accent: accentColor),
+        themeMode: themeMode,
+        home: const MaintenanceScreen(),
+        debugShowCheckedModeBanner: false,
+      );
+    }
+
+    if (profile?.isBanned == true) {
+      return MaterialApp(
+        title: 'Delhi Dating',
+        theme: AppTheme.lightTheme(accent: accentColor),
+        darkTheme: AppTheme.darkTheme(accent: accentColor),
+        themeMode: themeMode,
+        home: BannedScreen(reason: profile?.banReason),
+        debugShowCheckedModeBanner: false,
+      );
+    }
 
     return MaterialApp.router(
       title: 'Delhi Dating',

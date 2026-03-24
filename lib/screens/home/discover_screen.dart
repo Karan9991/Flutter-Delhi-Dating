@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../models/feature_flags.dart';
 import '../../models/user_profile.dart';
 import '../../providers.dart';
 import '../../widgets/empty_state.dart';
@@ -82,6 +83,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
   @override
   Widget build(BuildContext context) {
     final discoverState = ref.watch(discoverProfilesProvider);
+    final featureFlags = ref
+        .watch(featureFlagsProvider)
+        .maybeWhen(data: (value) => value, orElse: () => FeatureFlags.defaults);
+    final swipeEnabled = featureFlags.swipeEnabled;
 
     return Scaffold(
       appBar: AppBar(
@@ -92,6 +97,14 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
       ),
       body: discoverState.when(
         data: (profiles) {
+          if (!featureFlags.discoverEnabled) {
+            return const EmptyState(
+              title: 'Discover is paused',
+              subtitle: 'Please check back soon.',
+              icon: Icons.pause_circle_outline,
+            );
+          }
+
           if (_queue.isEmpty && profiles.isNotEmpty) {
             _queue.addAll(
               profiles.where(
@@ -112,7 +125,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
           }
 
           final profile = _queue.first;
-          return Stack(
+          final deck = Stack(
             children: [
               Positioned(
                 top: -30,
@@ -189,6 +202,38 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
                     const SizedBox(height: 12),
                     Expanded(child: _buildDeckCanvas(profile)),
                   ],
+                ),
+              ),
+            ],
+          );
+
+          if (swipeEnabled) {
+            return deck;
+          }
+
+          return Stack(
+            children: [
+              AbsorbPointer(child: deck),
+              Positioned(
+                left: 24,
+                right: 24,
+                top: 18,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  child: const Text(
+                    'Swiping is temporarily disabled by the admin.',
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
             ],
@@ -670,6 +715,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
           .read(chatServiceProvider)
           .createOrGetConversation(currentUid: auth.uid, otherUid: profile.id);
 
+      await ref.read(adServiceProvider).showInterstitialIfAvailable();
       if (!mounted) return;
       context.push('/chat/$conversationId', extra: profile.id);
     } catch (error) {

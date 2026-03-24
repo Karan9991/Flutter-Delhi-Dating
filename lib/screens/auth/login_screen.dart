@@ -81,7 +81,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (error is FirebaseAuthException) {
       switch (error.code) {
         case 'email-not-verified':
-          return 'Please verify your email first. A fresh link was sent.';
+          return 'Please verify your email before signing in.';
         case 'invalid-credential':
         case 'wrong-password':
         case 'user-not-found':

@@ -11,6 +11,8 @@ class UserProfile {
     required this.location,
     required this.interests,
     required this.photoUrls,
+    this.isBanned = false,
+    this.banReason,
     this.pronouns,
     this.jobTitle,
     this.company,
@@ -29,6 +31,8 @@ class UserProfile {
   final String location;
   final List<String> interests;
   final List<String> photoUrls;
+  final bool isBanned;
+  final String? banReason;
   final String? pronouns;
   final String? jobTitle;
   final String? company;
@@ -46,6 +50,8 @@ class UserProfile {
     String? location,
     List<String>? interests,
     List<String>? photoUrls,
+    bool? isBanned,
+    String? banReason,
     String? pronouns,
     String? jobTitle,
     String? company,
@@ -64,6 +70,8 @@ class UserProfile {
       location: location ?? this.location,
       interests: interests ?? this.interests,
       photoUrls: photoUrls ?? this.photoUrls,
+      isBanned: isBanned ?? this.isBanned,
+      banReason: banReason ?? this.banReason,
       pronouns: pronouns ?? this.pronouns,
       jobTitle: jobTitle ?? this.jobTitle,
       company: company ?? this.company,
@@ -112,6 +120,8 @@ class UserProfile {
       location: rawLocation.trim().isEmpty ? 'Delhi' : rawLocation,
       interests: List<String>.from(data['interests'] ?? const []),
       photoUrls: List<String>.from(data['photoUrls'] ?? const []),
+      isBanned: data['isBanned'] == true,
+      banReason: data['banReason'] as String?,
       pronouns: data['pronouns'] as String?,
       jobTitle: data['jobTitle'] as String?,
       company: data['company'] as String?,

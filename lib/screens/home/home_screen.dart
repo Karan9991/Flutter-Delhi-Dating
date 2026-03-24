@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'discover_screen.dart';
 import 'matches_screen.dart';
 import 'profile_screen.dart';
 import 'settings_screen.dart';
 import '../../config/admob_ids.dart';
+import '../../models/feature_flags.dart';
+import '../../providers.dart';
 import '../../widgets/ad_banner.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key, this.initialIndex = 0});
 
   final int initialIndex;
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   late int _index;
 
   @override
@@ -36,6 +39,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final featureFlags = ref
+        .watch(featureFlagsProvider)
+        .maybeWhen(data: (value) => value, orElse: () => FeatureFlags.defaults);
+    final showAds = featureFlags.adsEnabled;
+
     return Scaffold(
       body: Column(
         children: [
@@ -50,10 +58,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: AdBanner(adUnitId: AdMobIds.bannerAdUnitId()),
-          ),
+          if (showAds)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: AdBanner(adUnitId: AdMobIds.bannerAdUnitId()),
+            ),
         ],
       ),
       bottomNavigationBar: NavigationBar(

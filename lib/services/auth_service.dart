@@ -22,12 +22,7 @@ class AuthService {
     await user.reload();
     final refreshed = _auth.currentUser;
     if (refreshed != null && !refreshed.emailVerified) {
-      await refreshed.sendEmailVerification();
-      await _auth.signOut();
-      throw FirebaseAuthException(
-        code: 'email-not-verified',
-        message: 'Please verify your email before signing in.',
-      );
+      return credential;
     }
 
     return credential;
@@ -44,7 +39,6 @@ class AuthService {
     final user = credential.user;
     if (user != null && _isPasswordAccount(user)) {
       await user.sendEmailVerification();
-      await _auth.signOut();
     }
     return credential;
   }

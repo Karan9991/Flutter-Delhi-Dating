@@ -9,9 +9,11 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'models/like_item.dart';
 import 'models/match_item.dart';
+import 'models/feature_flags.dart';
 import 'models/user_profile.dart';
 import 'models/user_settings.dart';
 import 'services/auth_service.dart';
+import 'services/ad_service.dart';
 import 'services/chat_presence_service.dart';
 import 'services/chat_service.dart';
 import 'services/delhi_access_service.dart';
@@ -83,6 +85,11 @@ final notificationServiceProvider = Provider<NotificationService>((ref) {
   ref.onDispose(service.dispose);
   return service;
 });
+final adServiceProvider = Provider<AdService>((ref) {
+  final service = AdService();
+  ref.onDispose(service.dispose);
+  return service;
+});
 
 final authStateProvider = StreamProvider<User?>(
   (ref) => ref.read(firebaseAuthProvider).authStateChanges(),
@@ -133,6 +140,15 @@ final userSettingsProvider = StreamProvider.autoDispose<UserSettings>((ref) {
     );
   }
   return ref.read(firestoreServiceProvider).settingsStream(auth.uid);
+});
+
+final featureFlagsProvider = StreamProvider<FeatureFlags>((ref) {
+  return ref
+      .read(firestoreProvider)
+      .collection('app_config')
+      .doc('features')
+      .snapshots()
+      .map((doc) => FeatureFlags.fromDoc(doc));
 });
 
 final onboardingSeenProvider = StateProvider<bool>((ref) => false);

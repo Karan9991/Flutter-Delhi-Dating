@@ -26,10 +26,11 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
 
     try {
       await ref.read(authServiceProvider).reloadCurrentUser();
-      final user = ref.read(authStateProvider).value;
+      final user = ref.read(firebaseAuthProvider).currentUser;
       if (user != null && user.emailVerified) {
+        await ref.read(authServiceProvider).signOut();
         if (!mounted) return;
-        context.go('/');
+        context.go('/login');
         return;
       }
       setState(() {
@@ -80,6 +81,12 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     context.go('/login');
   }
 
+  Future<void> _goToRegister() async {
+    await ref.read(authServiceProvider).signOut();
+    if (!mounted) return;
+    context.go('/register');
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -89,7 +96,10 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Verify Email'),
-        automaticallyImplyLeading: false,
+        leading: IconButton(
+          onPressed: _goToRegister,
+          icon: const Icon(Icons.arrow_back),
+        ),
       ),
       body: Stack(
         children: [

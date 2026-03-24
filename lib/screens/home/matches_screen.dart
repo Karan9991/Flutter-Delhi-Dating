@@ -228,6 +228,7 @@ class _LikeCard extends ConsumerWidget {
             otherUid: item.user.id,
           );
 
+      await ref.read(adServiceProvider).showInterstitialIfAvailable();
       if (!context.mounted) return;
       context.push('/chat/$conversationId', extra: item.user.id);
     } catch (error) {
@@ -253,8 +254,7 @@ class _MatchTile extends ConsumerWidget {
         : DateFormat('MMM d').format(match.lastMessageAt!);
 
     return InkWell(
-      onTap: () =>
-          context.push('/chat/${match.matchId}', extra: match.otherUser.id),
+      onTap: () => _openChat(context, ref),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -329,6 +329,12 @@ class _MatchTile extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _openChat(BuildContext context, WidgetRef ref) async {
+    await ref.read(adServiceProvider).showInterstitialIfAvailable();
+    if (!context.mounted) return;
+    context.push('/chat/${match.matchId}', extra: match.otherUser.id);
   }
 
   Future<void> _confirmDeleteChat(BuildContext context, WidgetRef ref) async {
