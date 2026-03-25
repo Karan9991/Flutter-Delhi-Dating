@@ -4,16 +4,27 @@ import 'package:flutter/foundation.dart';
 
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
-    _subscription = stream.asBroadcastStream().listen((_) {
-      notifyListeners();
-    });
+    _subscriptions = [stream.asBroadcastStream().listen(_onEvent)];
   }
 
-  late final StreamSubscription<dynamic> _subscription;
+  GoRouterRefreshStream.multiple(Iterable<Stream<dynamic>> streams) {
+    _subscriptions = [
+      for (final stream in streams)
+        stream.asBroadcastStream().listen(_onEvent),
+    ];
+  }
+
+  late final List<StreamSubscription<dynamic>> _subscriptions;
+
+  void _onEvent(dynamic _) {
+    notifyListeners();
+  }
 
   @override
   void dispose() {
-    _subscription.cancel();
+    for (final subscription in _subscriptions) {
+      subscription.cancel();
+    }
     super.dispose();
   }
 }

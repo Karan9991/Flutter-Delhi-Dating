@@ -36,9 +36,10 @@ class _DatingAppState extends ConsumerState<DatingApp> {
     super.initState();
     _router = GoRouter(
       initialLocation: '/',
-      refreshListenable: GoRouterRefreshStream(
+      refreshListenable: GoRouterRefreshStream.multiple([
         ref.read(authStateProvider.stream),
-      ),
+        ref.read(userProfileProvider.stream),
+      ]),
       routes: [
         GoRoute(
           path: '/',
@@ -105,6 +106,7 @@ class _DatingAppState extends ConsumerState<DatingApp> {
         final isIntroRoute = state.matchedLocation == '/intro';
         final isDelhiAccessRoute = state.matchedLocation == '/delhi-access';
         final isVerifyRoute = state.matchedLocation == '/verify-email';
+        final isOnboardingRoute = state.matchedLocation == '/onboarding';
         final hasSeenIntro = ref.read(onboardingSeenProvider);
         final hasDelhiAccess = ref.read(delhiAccessGrantedProvider);
 
@@ -126,6 +128,15 @@ class _DatingAppState extends ConsumerState<DatingApp> {
 
         if (_needsEmailVerification(user)) {
           return isVerifyRoute ? null : '/verify-email';
+        }
+
+        final profileState = ref.read(userProfileProvider);
+        final profile = profileState.asData?.value;
+        final needsProfile =
+            !profileState.isLoading &&
+            (profile == null || !profile.isComplete);
+        if (needsProfile) {
+          return isOnboardingRoute ? null : '/onboarding';
         }
 
         if (isVerifyRoute || isAuthRoute || isDelhiAccessRoute) return '/';

@@ -41,6 +41,13 @@ class UserProfile {
   final DateTime? lastActive;
   final DateTime? createdAt;
 
+  bool get isComplete {
+    return displayName.trim().isNotEmpty &&
+        age >= 18 &&
+        bio.trim().isNotEmpty &&
+        photoUrls.isNotEmpty;
+  }
+
   UserProfile copyWith({
     String? displayName,
     int? age,
