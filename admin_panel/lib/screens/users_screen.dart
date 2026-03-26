@@ -87,10 +87,33 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
 
                   return Card(
                     child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundImage:
-                            photoUrls.isNotEmpty ? NetworkImage(photoUrls.first) : null,
-                        child: photoUrls.isEmpty ? const Icon(Icons.person_outline) : null,
+                      onTap: () => _showUserDetails(doc),
+                      leading: SizedBox(
+                        width: 40,
+                        height: 40,
+                        child: ClipOval(
+                          child: photoUrls.isNotEmpty
+                              ? Image.network(
+                                  photoUrls.first,
+                                  fit: BoxFit.cover,
+                                  webHtmlElementStrategy:
+                                      WebHtmlElementStrategy.prefer,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      color: theme.colorScheme.surfaceVariant,
+                                      alignment: Alignment.center,
+                                      child: const Icon(
+                                        Icons.person_outline,
+                                      ),
+                                    );
+                                  },
+                                )
+                              : Container(
+                                  color: theme.colorScheme.surfaceVariant,
+                                  alignment: Alignment.center,
+                                  child: const Icon(Icons.person_outline),
+                                ),
+                        ),
                       ),
                       title: Text(name),
                       subtitle: Text('UID: ${doc.id} • Age: $age'),
@@ -99,6 +122,10 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                         children: [
                           if (isBanned)
                             const Chip(label: Text('BANNED')),
+                          TextButton(
+                            onPressed: () => _showUserDetails(doc),
+                            child: const Text('View'),
+                          ),
                           TextButton(
                             onPressed: () => _toggleBan(doc.reference, isBanned),
                             child: Text(isBanned ? 'Unban' : 'Ban'),
@@ -190,5 +217,138 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
     if (result == true) {
       await refDoc.delete();
     }
+  }
+
+  Future<void> _showUserDetails(
+    QueryDocumentSnapshot<Map<String, dynamic>> doc,
+  ) async {
+    final data = doc.data();
+    final theme = Theme.of(context);
+    final photoUrls = List<String>.from(data['photoUrls'] ?? const []);
+    final interests = List<String>.from(data['interests'] ?? const []);
+    final createdAt = data['createdAt']?.toString() ?? '—';
+    final lastActive = data['lastActive']?.toString() ?? '—';
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(data['displayName']?.toString().isNotEmpty == true
+            ? data['displayName'].toString()
+            : 'User profile'),
+        content: SizedBox(
+          width: 640,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (photoUrls.isNotEmpty)
+                  SizedBox(
+                    height: 200,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: photoUrls.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 12),
+                      itemBuilder: (context, index) {
+                        final url = photoUrls[index];
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.network(
+                            url,
+                            width: 160,
+                            height: 200,
+                            fit: BoxFit.cover,
+                            webHtmlElementStrategy:
+                                WebHtmlElementStrategy.prefer,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: 160,
+                                height: 200,
+                                color: theme.colorScheme.surfaceVariant,
+                                alignment: Alignment.center,
+                                child: const Icon(Icons.broken_image_outlined),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  )
+                else
+                  Container(
+                    height: 160,
+                    width: double.infinity,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceVariant,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Text('No photos uploaded'),
+                  ),
+                const SizedBox(height: 16),
+                _detailRow('UID', doc.id),
+                _detailRow('Age', (data['age'] ?? '—').toString()),
+                _detailRow('Gender', (data['gender'] ?? '—').toString()),
+                _detailRow('Looking for', (data['lookingFor'] ?? '—').toString()),
+                _detailRow('Pronouns', (data['pronouns'] ?? '—').toString()),
+                _detailRow('Job title', (data['jobTitle'] ?? '—').toString()),
+                _detailRow('Company', (data['company'] ?? '—').toString()),
+                _detailRow('Education', (data['education'] ?? '—').toString()),
+                _detailRow('Height (cm)', (data['heightCm'] ?? '—').toString()),
+                _detailRow('Created', createdAt),
+                _detailRow('Last active', lastActive),
+                const SizedBox(height: 12),
+                Text('Bio', style: theme.textTheme.titleSmall),
+                const SizedBox(height: 6),
+                Text(
+                  (data['bio'] ?? '—').toString(),
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 12),
+                Text('Interests', style: theme.textTheme.titleSmall),
+                const SizedBox(height: 6),
+                if (interests.isEmpty)
+                  const Text('—')
+                else
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: interests
+                        .map((interest) => Chip(label: Text(interest)))
+                        .toList(),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
   }
 }
