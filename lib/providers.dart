@@ -6,10 +6,13 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'models/like_item.dart';
 import 'models/match_item.dart';
+import 'models/app_version.dart';
 import 'models/feature_flags.dart';
+import 'models/release_config.dart';
 import 'models/user_profile.dart';
 import 'models/user_settings.dart';
 import 'services/auth_service.dart';
@@ -149,6 +152,23 @@ final featureFlagsProvider = StreamProvider<FeatureFlags>((ref) {
       .doc('features')
       .snapshots()
       .map((doc) => FeatureFlags.fromDoc(doc));
+});
+
+final releaseConfigProvider = StreamProvider<ReleaseConfig>((ref) {
+  return ref
+      .read(firestoreProvider)
+      .collection('app_config')
+      .doc('release')
+      .snapshots()
+      .map((doc) => ReleaseConfig.fromDoc(doc));
+});
+
+final appVersionProvider = FutureProvider<AppVersion>((ref) async {
+  final info = await PackageInfo.fromPlatform();
+  return AppVersion(
+    version: info.version,
+    buildNumber: int.tryParse(info.buildNumber) ?? 0,
+  );
 });
 
 final onboardingSeenProvider = StateProvider<bool>((ref) => false);

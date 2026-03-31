@@ -18,6 +18,7 @@ import 'screens/onboarding/intro_screen.dart';
 import 'screens/onboarding/profile_setup_screen.dart';
 import 'screens/system/banned_screen.dart';
 import 'screens/system/maintenance_screen.dart';
+import 'screens/system/update_required_screen.dart';
 import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
 
@@ -193,9 +194,39 @@ class _DatingAppState extends ConsumerState<DatingApp> {
     final featureFlags = ref
         .watch(featureFlagsProvider)
         .maybeWhen(data: (value) => value, orElse: () => null);
+    final releaseConfig = ref
+        .watch(releaseConfigProvider)
+        .maybeWhen(data: (value) => value, orElse: () => null);
+    final appVersion = ref
+        .watch(appVersionProvider)
+        .maybeWhen(data: (value) => value, orElse: () => null);
     final profile = ref
         .watch(userProfileProvider)
         .maybeWhen(data: (value) => value, orElse: () => null);
+
+    final updateRequired = releaseConfig != null &&
+        appVersion != null &&
+        releaseConfig.requiresUpdate(appVersion.buildNumber);
+
+    if (updateRequired) {
+      final versionLabel = appVersion.version.isNotEmpty
+          ? '${appVersion.version} (${appVersion.buildNumber})'
+          : appVersion.buildNumber.toString();
+      return MaterialApp(
+        title: 'Delhi Dating',
+        theme: AppTheme.lightTheme(accent: accentColor),
+        darkTheme: AppTheme.darkTheme(accent: accentColor),
+        themeMode: themeMode,
+        home: UpdateRequiredScreen(
+          title: releaseConfig.title,
+          message: releaseConfig.message,
+          storeUrl: releaseConfig.storeUrl,
+          currentVersion: versionLabel,
+          latestVersion: releaseConfig.latestVersion,
+        ),
+        debugShowCheckedModeBanner: false,
+      );
+    }
 
     if (featureFlags?.maintenanceEnabled == true) {
       return MaterialApp(

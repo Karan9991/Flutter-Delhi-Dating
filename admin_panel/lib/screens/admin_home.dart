@@ -5,6 +5,7 @@ import '../providers.dart';
 import 'dashboard_screen.dart';
 import 'features_screen.dart';
 import 'matches_screen.dart';
+import 'release_screen.dart';
 import 'reports_screen.dart';
 import 'users_screen.dart';
 
@@ -43,6 +44,11 @@ class _AdminHomeState extends ConsumerState<AdminHome> {
       label: 'Features',
       icon: Icons.tune,
       widget: FeaturesScreen(),
+    ),
+    _AdminDestination(
+      label: 'Release',
+      icon: Icons.system_update_alt_outlined,
+      widget: ReleaseScreen(),
     ),
   ];
 

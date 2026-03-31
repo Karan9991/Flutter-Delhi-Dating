@@ -27,6 +27,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settingsState = ref.watch(userSettingsProvider);
+    final appVersionState = ref.watch(appVersionProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -206,6 +207,21 @@ class SettingsScreen extends ConsumerWidget {
               title: 'Help & Support',
               description: 'Contact support or report a safety concern.',
               onTap: () => _openSupportPage(context),
+            ),
+            const SizedBox(height: 16),
+            _SectionCard(
+              title: 'About',
+              children: [
+                ListTile(
+                  title: const Text('App version'),
+                  subtitle: appVersionState.when(
+                    data: (info) =>
+                        Text('${info.version} (${info.buildNumber})'),
+                    loading: () => const Text('Loading...'),
+                    error: (_, __) => const Text('Unavailable'),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 20),
             FilledButton(
