@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../config/web_page_urls.dart';
@@ -718,11 +720,25 @@ class SettingsScreen extends ConsumerWidget {
     required StorageService storageService,
     required String uid,
   }) async {
-    await storageService.deleteUserProfileImages(uid);
+    try {
+      await storageService.deleteUserProfileImages(uid);
+    } catch (_) {
+      // Best-effort cleanup; continue even if storage delete fails.
+    }
 
     final swipesRef = firestore.collection('swipes').doc(uid);
-    final likedSnapshot = await swipesRef.collection('liked').get();
-    final likedBySnapshot = await swipesRef.collection('likedBy').get();
+    QuerySnapshot<Map<String, dynamic>> likedSnapshot;
+    QuerySnapshot<Map<String, dynamic>> likedBySnapshot;
+    try {
+      likedSnapshot = await swipesRef.collection('liked').get();
+    } catch (_) {
+      likedSnapshot = await firestore.collection('swipes').doc(uid).collection('liked').get();
+    }
+    try {
+      likedBySnapshot = await swipesRef.collection('likedBy').get();
+    } catch (_) {
+      likedBySnapshot = await firestore.collection('swipes').doc(uid).collection('likedBy').get();
+    }
 
     final cleanupRefs = <DocumentReference<Map<String, dynamic>>>[];
     for (final doc in likedSnapshot.docs) {
@@ -740,26 +756,44 @@ class SettingsScreen extends ConsumerWidget {
       );
     }
 
-    await _deleteDocumentReferences(firestore, cleanupRefs);
-    await _deleteDocumentQuery(swipesRef.collection('liked'));
-    await _deleteDocumentQuery(swipesRef.collection('passed'));
-    await _deleteDocumentQuery(swipesRef.collection('likedBy'));
-    await swipesRef.delete();
+    try {
+      await _deleteDocumentReferences(firestore, cleanupRefs);
+    } catch (_) {}
+    try {
+      await _deleteDocumentQuery(swipesRef.collection('liked'));
+      await _deleteDocumentQuery(swipesRef.collection('passed'));
+      await _deleteDocumentQuery(swipesRef.collection('likedBy'));
+      await swipesRef.delete();
+    } catch (_) {}
 
-    final matchesSnapshot = await firestore
-        .collection('matches')
-        .where('userIds', arrayContains: uid)
-        .get();
+    QuerySnapshot<Map<String, dynamic>> matchesSnapshot;
+    try {
+      matchesSnapshot = await firestore
+          .collection('matches')
+          .where('userIds', arrayContains: uid)
+          .get();
+    } catch (_) {
+      matchesSnapshot = await firestore
+          .collection('matches')
+          .where('userIds', arrayContains: uid)
+          .get();
+    }
 
     for (final matchDoc in matchesSnapshot.docs) {
-      await _deleteDocumentQuery(matchDoc.reference.collection('messages'));
+      try {
+        await _deleteDocumentQuery(matchDoc.reference.collection('messages'));
+      } catch (_) {}
     }
-    await _deleteDocumentReferences(
-      firestore,
-      matchesSnapshot.docs.map((doc) => doc.reference).toList(),
-    );
+    try {
+      await _deleteDocumentReferences(
+        firestore,
+        matchesSnapshot.docs.map((doc) => doc.reference).toList(),
+      );
+    } catch (_) {}
 
-    await firestore.collection('users').doc(uid).delete();
+    try {
+      await firestore.collection('users').doc(uid).delete();
+    } catch (_) {}
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
@@ -803,13 +837,16 @@ class SettingsScreen extends ConsumerWidget {
       'Notification tokens',
     ];
 
+    final reauthed = await _ensureRecentLogin(context, user);
+    if (!reauthed) return;
+
     try {
       await _deleteUserAssociatedData(
         firestore: firestore,
         storageService: storageService,
         uid: user.uid,
       );
-      await user.delete();
+      await _deleteAuthAccount(context, user);
 
       final deletePage = Uri.parse(kDeleteAccountPageUrl).replace(
         queryParameters: {
@@ -830,13 +867,136 @@ class SettingsScreen extends ConsumerWidget {
           const SnackBar(content: Text('Unable to open the page right now.')),
         );
       }
-    } catch (error) {
+    } on FirebaseAuthException catch (error) {
+      if (!context.mounted) return;
+      final message = error.code == 'requires-recent-login'
+          ? 'Please sign in again before deleting your account.'
+          : 'Could not delete your account right now.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please sign in again before deleting your account.'),
+          content: Text('Could not delete your account right now.'),
         ),
       );
+    }
+  }
+
+  Future<bool> _ensureRecentLogin(BuildContext context, User user) async {
+    final lastSignIn = user.metadata.lastSignInTime;
+    if (lastSignIn != null) {
+      final age = DateTime.now().difference(lastSignIn);
+      if (age.inMinutes < 30) {
+        return true;
+      }
+    }
+
+    if (user.providerData.any(
+      (provider) => provider.providerId == EmailAuthProvider.PROVIDER_ID,
+    )) {
+      return _reauthenticateWithPassword(context, user);
+    }
+
+    if (user.providerData.any(
+      (provider) => provider.providerId == GoogleAuthProvider.PROVIDER_ID,
+    )) {
+      return _reauthenticateWithGoogle(context, user);
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Please sign in again before deleting your account.'),
+      ),
+    );
+    return false;
+  }
+
+  Future<bool> _reauthenticateWithPassword(
+    BuildContext context,
+    User user,
+  ) async {
+    final controller = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm your password'),
+        content: TextField(
+          controller: controller,
+          obscureText: true,
+          decoration: const InputDecoration(labelText: 'Password'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return false;
+    final email = user.email;
+    if (email == null || email.isEmpty) return false;
+
+    try {
+      final credential = EmailAuthProvider.credential(
+        email: email,
+        password: controller.text.trim(),
+      );
+      await user.reauthenticateWithCredential(credential);
+      return true;
+    } on FirebaseAuthException catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Incorrect password.')),
+        );
+      }
+      return false;
+    }
+  }
+
+  Future<bool> _reauthenticateWithGoogle(
+    BuildContext context,
+    User user,
+  ) async {
+    try {
+      final googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) return false;
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      await user.reauthenticateWithCredential(credential);
+      return true;
+    } on FirebaseAuthException {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google re-authentication failed.')),
+        );
+      }
+      return false;
+    }
+  }
+
+  Future<void> _deleteAuthAccount(BuildContext context, User user) async {
+    try {
+      await user.delete();
+    } on FirebaseAuthException catch (error) {
+      if (error.code == 'requires-recent-login') {
+        final ok = await _ensureRecentLogin(context, user);
+        if (!ok) rethrow;
+        await user.delete();
+        return;
+      }
+      rethrow;
     }
   }
 }

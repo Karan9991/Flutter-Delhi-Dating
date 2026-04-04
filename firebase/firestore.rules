@@ -30,7 +30,8 @@ service cloud.firestore {
     }
 
     match /swipes/{userId}/liked/{otherId} {
-      allow create, update, delete: if isAdmin() || (signedIn() && request.auth.uid == userId);
+      allow create, update, delete: if isAdmin() || (signedIn() &&
+        (request.auth.uid == userId || request.auth.uid == otherId));
       allow read: if isAdmin() || (signedIn() && request.auth.uid == otherId);
     }
 
