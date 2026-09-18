@@ -83,6 +83,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
   @override
   Widget build(BuildContext context) {
     final discoverState = ref.watch(discoverProfilesProvider);
+    final currentProfile = ref.watch(userProfileProvider).value;
     final featureFlags = ref
         .watch(featureFlagsProvider)
         .maybeWhen(data: (value) => value, orElse: () => FeatureFlags.defaults);
@@ -105,9 +106,24 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
             );
           }
 
-          if (_queue.isEmpty && profiles.isNotEmpty) {
+          if (currentProfile == null) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final lookingFor = currentProfile.lookingFor;
+          // This second guard protects the active deck from stale cards and
+          // from profiles written by older versions of the app.
+          final matchingProfiles = profiles
+              .where((profile) => profile.matchesLookingFor(lookingFor))
+              .toList();
+          final availableIds = matchingProfiles
+              .map((profile) => profile.id)
+              .toSet();
+          _queue.removeWhere((profile) => !availableIds.contains(profile.id));
+
+          if (_queue.isEmpty && matchingProfiles.isNotEmpty) {
             _queue.addAll(
-              profiles.where(
+              matchingProfiles.where(
                 (profile) =>
                     !_swipedIds.contains(profile.id) &&
                     profile.age >= _ageRange.start &&
@@ -198,7 +214,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
                 padding: const EdgeInsets.fromLTRB(12, 10, 12, 16),
                 child: Column(
                   children: [
-                    _buildDeckHeader(),
+                    _buildDeckHeader(lookingFor: lookingFor),
                     const SizedBox(height: 12),
                     Expanded(child: _buildDeckCanvas(profile)),
                   ],
@@ -532,7 +548,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
     );
   }
 
-  Widget _buildDeckHeader() {
+  Widget _buildDeckHeader({required String lookingFor}) {
     final theme = Theme.of(context);
     return Container(
       width: double.infinity,
@@ -591,7 +607,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${_queue.length} profiles available around you',
+                  '${_queue.length} profiles available around you • ${_filterLabel(lookingFor)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurface.withOpacity(0.72),
                   ),
@@ -619,6 +637,22 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
         ],
       ),
     );
+  }
+
+  String _filterLabel(String lookingFor) {
+    switch (lookingFor.trim().toLowerCase()) {
+      case 'women':
+      case 'woman':
+        return 'Showing women';
+      case 'men':
+      case 'man':
+        return 'Showing men';
+      case 'non-binary':
+      case 'nonbinary':
+        return 'Showing non-binary people';
+      default:
+        return 'Showing everyone';
+    }
   }
 
   Future<void> _handlePanEnd(

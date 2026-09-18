@@ -109,7 +109,9 @@ final discoverProfilesProvider = FutureProvider.autoDispose<List<UserProfile>>((
 ) async {
   final auth = ref.watch(authStateProvider).value;
   if (auth == null) return [];
-  return ref.read(firestoreServiceProvider).fetchDiscoverableProfiles(auth.uid);
+  return ref
+      .read(firestoreServiceProvider)
+      .fetchDiscoverableProfiles(uid: auth.uid);
 });
 
 final matchesProvider = StreamProvider.autoDispose<List<MatchItem>>((ref) {

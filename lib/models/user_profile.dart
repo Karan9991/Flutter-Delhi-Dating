@@ -48,6 +48,50 @@ class UserProfile {
         photoUrls.isNotEmpty;
   }
 
+  /// Returns whether this profile matches the other user's saved preference.
+  /// The aliases keep older profiles using Male/Female values compatible.
+  bool matchesLookingFor(String lookingFor) {
+    final preference = lookingFor.trim().toLowerCase();
+    final candidateGender = _normalizedGender(gender);
+
+    switch (preference) {
+      case 'women':
+      case 'woman':
+        return candidateGender == 'woman';
+      case 'men':
+      case 'man':
+        return candidateGender == 'man';
+      case 'non-binary':
+      case 'nonbinary':
+        return candidateGender == 'non-binary';
+      case 'everyone':
+      case '':
+        return true;
+      default:
+        // An unrecognised saved value must not loosen the user's filter.
+        return false;
+    }
+  }
+
+  static String _normalizedGender(String value) {
+    switch (value.trim().toLowerCase()) {
+      case 'woman':
+      case 'women':
+      case 'female':
+        return 'woman';
+      case 'man':
+      case 'men':
+      case 'male':
+        return 'man';
+      case 'non-binary':
+      case 'nonbinary':
+      case 'non binary':
+        return 'non-binary';
+      default:
+        return '';
+    }
+  }
+
   UserProfile copyWith({
     String? displayName,
     int? age,

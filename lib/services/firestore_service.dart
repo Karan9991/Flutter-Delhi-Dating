@@ -42,8 +42,22 @@ class FirestoreService {
     }, SetOptions(merge: true));
   }
 
-  Future<List<UserProfile>> fetchDiscoverableProfiles(String uid) async {
-    final userSnapshot = await _users.limit(50).get();
+  Future<List<UserProfile>> fetchDiscoverableProfiles({
+    required String uid,
+  }) async {
+    // Read the preference from the signed-in user's Firestore profile instead
+    // of relying on a potentially stale UI/provider value.
+    final currentUser = await getProfile(uid);
+    if (currentUser == null) return [];
+
+    final acceptedGenders = _storedGenderVariants(currentUser.lookingFor);
+    if (acceptedGenders?.isEmpty ?? false) return [];
+    Query<Map<String, dynamic>> profilesQuery = _users;
+    if (acceptedGenders != null) {
+      profilesQuery = profilesQuery.where('gender', whereIn: acceptedGenders);
+    }
+
+    final userSnapshot = await profilesQuery.limit(50).get();
     final likedSnapshot = await _swipes.doc(uid).collection('liked').get();
     final passedSnapshot = await _swipes.doc(uid).collection('passed').get();
 
@@ -70,7 +84,33 @@ class FirestoreService {
               profile.displayName.isNotEmpty &&
               profile.age >= 18,
         )
+        .where(
+          (profile) =>
+              profile.matchesLookingFor(currentUser.lookingFor) &&
+              currentUser.matchesLookingFor(profile.lookingFor),
+        )
         .toList();
+  }
+
+  List<String>? _storedGenderVariants(String lookingFor) {
+    final normalizedPreference = lookingFor.trim().toLowerCase();
+    switch (normalizedPreference) {
+      case 'women':
+      case 'woman':
+        return const ['Woman', 'woman', 'Female', 'female'];
+      case 'men':
+      case 'man':
+        return const ['Man', 'man', 'Male', 'male'];
+      case 'non-binary':
+      case 'nonbinary':
+        return const ['Non-binary', 'nonbinary', 'Non Binary'];
+      case 'everyone':
+      case '':
+        return null;
+      default:
+        // Unknown values are never allowed to broaden the Discover results.
+        return const [];
+    }
   }
 
   Stream<List<MatchItem>> matchesStream(String uid) {
