@@ -45,7 +45,9 @@ class UserProfile {
     return displayName.trim().isNotEmpty &&
         age >= 18 &&
         bio.trim().isNotEmpty &&
-        photoUrls.isNotEmpty;
+        photoUrls.isNotEmpty &&
+        gender.trim().isNotEmpty &&
+        lookingFor.trim().isNotEmpty;
   }
 
   /// Returns whether this profile matches the other user's saved preference.

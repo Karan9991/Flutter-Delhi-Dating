@@ -29,8 +29,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
   bool _saving = false;
   bool _initialized = false;
-  String _gender = 'Woman';
-  String _lookingFor = 'Everyone';
+  String? _gender;
+  String? _lookingFor;
   String _pronouns = 'Prefer not to say';
   final List<String> _photoUrls = [];
   final List<String> _interests = [];
@@ -53,8 +53,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     _displayNameController.text = profile.displayName;
     _ageController.text = profile.age == 0 ? '' : profile.age.toString();
     _bioController.text = profile.bio;
-    _gender = profile.gender.isEmpty ? _gender : profile.gender;
-    _lookingFor = profile.lookingFor.isEmpty ? _lookingFor : profile.lookingFor;
+    _gender = _normaliseGender(profile.gender);
+    _lookingFor = _normaliseLookingFor(profile.lookingFor);
     _pronouns = profile.pronouns?.isNotEmpty == true
         ? profile.pronouns!
         : _pronouns;
@@ -69,6 +69,46 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       ..clear()
       ..addAll(profile.interests);
     _initialized = true;
+  }
+
+  String? _normaliseGender(String value) {
+    switch (value.trim().toLowerCase()) {
+      case 'woman':
+      case 'women':
+      case 'female':
+        return 'Woman';
+      case 'man':
+      case 'men':
+      case 'male':
+        return 'Man';
+      case 'non-binary':
+      case 'nonbinary':
+      case 'non binary':
+        return 'Non-binary';
+      default:
+        return null;
+    }
+  }
+
+  String? _normaliseLookingFor(String value) {
+    switch (value.trim().toLowerCase()) {
+      case 'women':
+      case 'woman':
+      case 'female':
+        return 'Women';
+      case 'men':
+      case 'man':
+      case 'male':
+        return 'Men';
+      case 'non-binary':
+      case 'nonbinary':
+      case 'non binary':
+        return 'Non-binary';
+      case 'everyone':
+        return 'Everyone';
+      default:
+        return null;
+    }
   }
 
   Future<void> _addPhoto() async {
@@ -127,6 +167,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
     final auth = ref.read(authStateProvider).value;
     if (auth == null) return;
+    final gender = _gender;
+    final lookingFor = _lookingFor;
+    if (gender == null || lookingFor == null) return;
     final existingProfile = ref.read(userProfileProvider).value;
     setState(() => _saving = true);
 
@@ -135,8 +178,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       displayName: _displayNameController.text.trim(),
       age: int.tryParse(_ageController.text.trim()) ?? 0,
       bio: _bioController.text.trim(),
-      gender: _gender,
-      lookingFor: _lookingFor,
+      gender: gender,
+      lookingFor: lookingFor,
       location: 'Delhi',
       interests: _interests,
       photoUrls: _photoUrls,
@@ -290,8 +333,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                           ),
                         ],
                         onChanged: (value) {
-                          if (value != null) setState(() => _gender = value);
+                          setState(() => _gender = value);
                         },
+                        validator: (value) =>
+                            value == null ? 'Select your gender' : null,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -317,10 +362,11 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                           ),
                         ],
                         onChanged: (value) {
-                          if (value != null) {
-                            setState(() => _lookingFor = value);
-                          }
+                          setState(() => _lookingFor = value);
                         },
+                        validator: (value) => value == null
+                            ? 'Select who you are looking for'
+                            : null,
                       ),
                     ),
                   ],
